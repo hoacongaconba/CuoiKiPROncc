@@ -1,10 +1,8 @@
 package Service;
-
 import Model.Event;
 import Model.Organizer;
 import Model.Venue;
 import Utility.Validation;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -12,7 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -27,7 +24,142 @@ public class EventManagement implements EventOperations {
         this.venues = new ArrayList<>();
     }
 
-    //--------------------------------------Program Operations--------------------------------------
+
+
+    public void runProgram() {
+        Validation validator = new Validation();
+        Scanner scanner = new Scanner(System.in);
+        initializeData();
+
+        while (true) {
+            System.out.println("---Enter your option---");
+            System.out.println("1. Create an event");
+            System.out.println("2. Display all events");
+            System.out.println("3. Update an event");
+            System.out.println("4. Delete an event");
+            System.out.println("5. Find events by name");
+            System.out.println("6. Save events to file");
+            System.out.println("7. Exit");
+
+            String choice = scanner.nextLine();
+
+            switch (choice) {
+                case "1":
+                    Event newEvent = validator.createNewEvent(events, organizers, venues);
+                    createEvent(newEvent);
+                    break;
+                case "2":
+                    if (listAllEvents().isEmpty()) {
+                        System.out.println("No event to display!");
+                        break;
+                    }
+                    for (Event event : listAllEvents()) {
+                        System.out.println(event);
+                    }
+                    break;
+                case "3":
+                    if (listAllEvents().isEmpty()) {
+                        System.out.println("No event to update!");
+                        break;
+                    }
+                    int idToUpdate = validator.getEventIdForAction("update");
+                    Event existingEvent = findEventById(idToUpdate);
+                    if (existingEvent != null) {
+                        System.out.println("Leave blank to keep current info.");
+                        Event updatedEvent = validator.updateEvent(events, organizers, venues, existingEvent);
+                        updateEvent(idToUpdate, updatedEvent);
+                        System.out.println("Event updated successfully.");
+                    } else {
+                        System.out.println("Event not found.");
+                    }
+                    break;
+                case "4":
+                    if (listAllEvents().isEmpty()) {
+                        System.out.println("No event to delete!");
+                        break;
+                    }
+                    int idToDelete = validator.getEventIdForAction("delete");
+                    Event eventToDelete = findEventById(idToDelete);
+                    if (eventToDelete == null) {
+                        System.out.println("Event not found.");
+                        break;
+                    }
+                    System.out.println("Are you sure you want to delete: " + eventToDelete.getEventName() + " [" + eventToDelete.getEventId() + "]? [y/n]");
+                    String confirmation = scanner.nextLine().toLowerCase();
+                    if (confirmation.equals("y")) {
+                        boolean isSuccessful = deleteEvent(idToDelete);
+                        System.out.println(isSuccessful ? "Delete successful." : "Delete failed.");
+                    } else if (confirmation.equals("n")) {
+                        System.out.println("Deletion cancelled.");
+                    } else {
+                        System.out.println("Invalid option.");
+                    }
+                    break;
+                case "5":
+                    if (listAllEvents().isEmpty()) {
+                        System.out.println("No event to search for!");
+                        break;
+                    }
+                    System.out.println("Enter event name to search:");
+                    String nameToSearch = scanner.nextLine().toLowerCase();
+                    List<Event> foundEvents = findEventsByName(nameToSearch);
+                    if (!foundEvents.isEmpty()) {
+                        for (Event event : foundEvents) {
+                            System.out.println(event);
+                        }
+                    } else {
+                        System.out.println("Event not found.");
+                    }
+                    break;
+                case "6":
+                    if (listAllEvents().isEmpty()) {
+                        System.out.println("No event to save!");
+                        break;
+                    }
+                    System.out.println("Enter the file name to save to:");
+                    String fileName = scanner.nextLine() + ".csv";
+                    if (saveTheFile(fileName)) {
+                        System.out.println("Events saved to " + fileName);
+                    } else {
+                        System.out.println("Error saving file.");
+                    }
+                    break;
+                case "7":
+                    System.out.println("Exited!");
+                    return;
+                default:
+                    System.out.println("Invalid option.");
+                    break;
+            }
+        }
+    }
+
+
+
+    private void initializeData() {
+        organizers = new ArrayList<>();
+        organizers.add(new Organizer(1, "EventPro Solutions"));
+        organizers.add(new Organizer(2, "Green Light Agency"));
+        organizers.add(new Organizer(3, "University Youth Union"));
+        organizers.add(new Organizer(4, "TechWorld Group"));
+        organizers.add(new Organizer(5, "Community Council"));
+        organizers.add(new Organizer(6, "City Entertainment Co."));
+        organizers.add(new Organizer(7, "Art & Culture Center"));
+        venues = new ArrayList<>();
+        venues.add(new Venue(1, "Grand Hall"));
+        venues.add(new Venue(2, "City Conference Center"));
+        venues.add(new Venue(3, "Open Air Park"));
+        venues.add(new Venue(4, "Exhibition Pavilion"));
+        venues.add(new Venue(5, "Downtown Auditorium"));
+        venues.add(new Venue(6, "Community House"));
+        venues.add(new Venue(7, "University Main Hall"));
+    }
+
+
+    public static void main(String[] args) {
+        EventManagement eventManagement = new EventManagement();
+        eventManagement.runProgram();
+    }
 
     @Override
     public void createEvent(Event event) {
@@ -156,7 +288,7 @@ public class EventManagement implements EventOperations {
         List<Event> eventsFound = new ArrayList<>();
 
         // Lặp qua toàn bộ danh sách sự kiện
-        for (int i = 0; i < events.size(); i++) {
+        for(int i = 0; i < events.size(); i++) {
             // Lấy ngày bắt đầu và ngày kết thúc của sự kiện hiện tại và chuyển thành LocalDate
             LocalDate eventStart = LocalDate.parse(events.get(i).getStartDate());
             LocalDate eventEnd = LocalDate.parse(events.get(i).getEndDate());
@@ -170,142 +302,5 @@ public class EventManagement implements EventOperations {
 
         // Trả về danh sách các sự kiện phù hợp
         return eventsFound;
-    }
-    //--------------------------------------Program Interface--------------------------------------
-
-    public void runProgram() {
-        Validation validator = new Validation();
-        Scanner scanner = new Scanner(System.in);
-        initializeData();
-
-        while (true) {
-            System.out.println("---Enter your option---");
-            System.out.println("1. Create an event");
-            System.out.println("2. Display all events");
-            System.out.println("3. Update an event");
-            System.out.println("4. Delete an event");
-            System.out.println("5. Find events by name");
-            System.out.println("6. Save events to file");
-            System.out.println("7. Exit");
-
-            String choice = scanner.nextLine();
-
-            switch (choice) {
-                case "1":
-                    Event newEvent = validator.inputNewEvent(events, organizers, venues);
-                    createEvent(newEvent);
-                    break;
-                case "2":
-                    if (listAllEvents().isEmpty()) {
-                        System.out.println("No event to display!");
-                        break;
-                    }
-                    for (Event event : listAllEvents()) {
-                        System.out.println(event);
-                    }
-                    break;
-                case "3":
-                    if (listAllEvents().isEmpty()) {
-                        System.out.println("\uD83D\uDCDB No event to update!");
-                        break;
-                    }
-                    int idToUpdate = validator.inputLooseEventId("update");
-                    Event existingEvent = findEventById(idToUpdate);
-                    if (existingEvent != null) {
-                        System.out.println("\uD83D\uDEA9 Leave blank to keep current info.");
-                        Event updatedEvent = validator.inputUpdatedEvent(events, organizers, venues, existingEvent);
-                        updateEvent(idToUpdate, updatedEvent);
-                        System.out.println("✅ Event updated successfully.");
-                    } else {
-                        System.out.println("❌ Event not found.");
-                    }
-                    break;
-                case "4":
-                    if (listAllEvents().isEmpty()) {
-                        System.out.println("\uD83D\uDCDB No event to delete!");
-                        break;
-                    }
-                    int idToDelete = validator.inputLooseEventId("delete");
-                    Event eventToDelete = findEventById(idToDelete);
-                    if (eventToDelete == null) {
-                        System.out.println("❌ Event not found.");
-                        break;
-                    }
-                    System.out.println("❓ Are you sure you want to delete: " + eventToDelete.getEventName() + " [" + eventToDelete.getEventId() + "]? [y/n]");
-                    String confirmation = scanner.nextLine().toLowerCase();
-                    if (confirmation.equals("y")) {
-                        boolean isSuccessful = deleteEvent(idToDelete);
-                        System.out.println(isSuccessful ? "✅ Delete successful." : "❌ Delete failed.");
-                    } else if (confirmation.equals("n")) {
-                        System.out.println("❌ Deletion cancelled.");
-                    } else {
-                        System.out.println("❌ Invalid option.");
-                    }
-                    break;
-                case "5":
-                    if (listAllEvents().isEmpty()) {
-                        System.out.println("\uD83D\uDCDB No event to search for!");
-                        break;
-                    }
-                    System.out.println("✋ Enter event name to search:");
-                    String nameToSearch = scanner.nextLine().toLowerCase();
-                    List<Event> foundEvents = findEventsByName(nameToSearch);
-                    if (!foundEvents.isEmpty()) {
-                        for (Event event : foundEvents) {
-                            System.out.println(event);
-                        }
-                    } else {
-                        System.out.println("❌ Event not found.");
-                    }
-                    break;
-                case "6":
-                    if (listAllEvents().isEmpty()) {
-                        System.out.println("\uD83D\uDCDB No event to save!");
-                        break;
-                    }
-                    System.out.println("✋ Enter the file name to save to:");
-                    String fileName = scanner.nextLine() + ".csv";
-                    if (saveTheFile(fileName)) {
-                        System.out.println("✅ Events saved to " + fileName);
-                    } else {
-                        System.out.println("❌ Error saving file.");
-                    }
-                    break;
-                case "7":
-                    System.out.println("\uD83D\uDC96 Exited!");
-                    return;
-                default:
-                    System.out.println("❌ Invalid option.");
-                    break;
-            }
-        }
-    }
-
-    //--------------------------------------Initialize Data--------------------------------------
-
-    private void initializeData() {
-        organizers = new ArrayList<>();
-        organizers.add(new Organizer(1, "EventPro Solutions"));
-        organizers.add(new Organizer(2, "Green Light Agency"));
-        organizers.add(new Organizer(3, "University Youth Union"));
-        organizers.add(new Organizer(4, "TechWorld Group"));
-        organizers.add(new Organizer(5, "Community Council"));
-        organizers.add(new Organizer(6, "City Entertainment Co."));
-        organizers.add(new Organizer(7, "Art & Culture Center"));
-        venues = new ArrayList<>();
-        venues.add(new Venue(1, "Grand Hall"));
-        venues.add(new Venue(2, "City Conference Center"));
-        venues.add(new Venue(3, "Open Air Park"));
-        venues.add(new Venue(4, "Exhibition Pavilion"));
-        venues.add(new Venue(5, "Downtown Auditorium"));
-        venues.add(new Venue(6, "Community House"));
-        venues.add(new Venue(7, "University Main Hall"));
-    }
-
-    //--------------------------------------Program Entry--------------------------------------
-
-    public static void main(String[] args) {
-        EventManagement eventManagement = new EventManagement();
-        eventManagement.runProgram();
     }
 }
